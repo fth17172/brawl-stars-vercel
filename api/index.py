@@ -57,5 +57,4 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     login_btn.click(check_bs_license, inputs=[key_input], outputs=[login_box, main_content, error_output])
     search_btn.click(fetch_bs_stats, inputs=[player_tag], outputs=[stats_output])
-
-app = demo.app
+app = demo.queue().app
