@@ -41,19 +41,18 @@ def read_root():
 
 @app.get("/api/fetch")
 def fetch_data(tag: str):
-    # API çağrısı: Tag başında # işareti olmamalı
-    url = f"{BASE_URL}/player/{tag}"
+    # API'ye giden tam URL'yi görmek için burayı takip et
+    url = f"https://api.brawlapi.com/v1/player/{tag}"
     
     try:
         response = requests.get(url, timeout=10)
         
-        if response.status_code == 404:
-            return {"html": "<p class='text-red-400'>❌ Oyuncu bulunamadı! Etiketi kontrol et.</p>"}
-        
+        # Hata detayını bize döndürsün
         if response.status_code != 200:
-            return {"html": f"<p class='text-yellow-400'>⚠️ Sunucu Hatası (Kod: {response.status_code})</p>"}
+            return {"html": f"❌ API Hatası ({response.status_code}): {response.text}"}
         
         data = response.json()
+        # ... geri kalanı aynı
         
         # Verileri güvenli çek
         name = data.get("name", "Bilinmiyor")
