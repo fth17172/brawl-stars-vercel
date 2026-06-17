@@ -44,7 +44,8 @@ def fetch_bs_stats(player_tag):
     except Exception as e:
         return f"🚨 Bağlantı Hatası: {str(e)}"
 
-with gr.Blocks(theme=gr.themes.Soft()) as demo:
+# Gradio 6.0 log uyarısını engellemek için theme parametresini launch'a bırakıp sadeleştiriyoruz
+with gr.Blocks() as demo:
     gr.Markdown("# 🏆 BRAWL STARS PRO ANALYZER")
     with gr.Column(visible=True) as login_box:
         key_input = gr.Textbox(label="Lisans Kodu", type="password")
@@ -57,4 +58,16 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     login_btn.click(check_bs_license, inputs=[key_input], outputs=[login_box, main_content, error_output])
     search_btn.click(fetch_bs_stats, inputs=[player_tag], outputs=[stats_output])
+
+# Uygulama iskeletini oluştur
 app = demo.queue().app
+
+# 🔥 VERCEL STARTUP YAMASI (Zorla Config Enjeksiyonu)
+# Vercel'in çalıştırmadığı konfigürasyon motorunu burada el ile tetikliyoruz.
+try:
+    app.blocks.config = demo.get_config_with_actions()
+except Exception:
+    try:
+        app.blocks.config = demo.config
+    except Exception:
+        pass
