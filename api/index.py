@@ -53,6 +53,7 @@ def fetch_data(tag: str):
         
         data = response.json()
         # ... geri kalanı aynı
+        # ... geri kalanı aynı
         
         # Verileri güvenli çek
         name = data.get("name", "Bilinmiyor")
