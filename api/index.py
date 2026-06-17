@@ -14,19 +14,17 @@ def read_root():
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
-    <body class="bg-gray-950 text-white flex justify-center p-4">
-        <div class="w-full max-w-md bg-gray-900 p-6 rounded-xl shadow-2xl border border-gray-800">
-            <h1 class="text-xl font-bold text-yellow-400 mb-4 text-center">🏆 ANALİZ SİSTEMİ</h1>
-            <input type="text" id="tag" placeholder="Örn: 2Y0JUYPLR" class="w-full p-3 bg-gray-800 rounded-lg mb-2 text-white placeholder-gray-500">
-            <button onclick="getData()" class="w-full p-3 bg-teal-600 font-bold rounded-lg hover:bg-teal-700">SORGULA</button>
-            <div id="res" class="mt-4 text-sm text-gray-300"></div>
+    <body class="bg-black text-white flex justify-center p-4">
+        <div class="w-full max-w-md bg-gray-900 p-6 rounded-2xl border border-gray-800">
+            <h1 class="text-2xl font-bold text-yellow-400 mb-4 text-center">🏆 BRAWL ANALYZER</h1>
+            <input type="text" id="tag" placeholder="Etiket (Örn: 9UUUYQY8R)" class="w-full p-3 bg-gray-800 rounded-lg mb-2 text-white border border-gray-700">
+            <button onclick="getData()" class="w-full p-3 bg-blue-600 font-bold rounded-lg hover:bg-blue-700">ANALİZİ BAŞLAT</button>
+            <div id="res" class="mt-4"></div>
         </div>
         <script>
             async function getData() {
-                const rawTag = document.getElementById('tag').value.trim();
-                const tag = rawTag.replace('#', '').toUpperCase();
-                document.getElementById('res').innerHTML = "Bağlanıyor...";
-                
+                const tag = document.getElementById('tag').value.replace('#', '').trim();
+                document.getElementById('res').innerHTML = "Sunuculardan veri alınıyor...";
                 const res = await fetch(`/api/fetch?tag=${tag}`);
                 const data = await res.json();
                 document.getElementById('res').innerHTML = data.html;
@@ -38,30 +36,22 @@ def read_root():
 
 @app.get("/api/fetch")
 def fetch_data(tag: str):
-    # Etiketi temizle: O harfini 0'a çevir, boşlukları sil
-    clean_tag = tag.upper().replace("O", "0").replace("#", "").strip()
+    # İki farklı API servisi deneyeceğiz (Yedekli mimari)
+    endpoints = [
+        f"https://api.brawlapi.com/v1/player/{tag}",
+        f"https://brawlstars-api.vercel.app/api/player/{tag}" # Alternatif proxy
+    ]
     
-    url = f"https://api.brawlapi.com/v1/player/{clean_tag}"
-    
-    try:
-        response = requests.get(url, timeout=10)
-        
-        if response.status_code == 404:
-            return {"html": f"<div class='text-red-400'>❌ Oyuncu bulunamadı! (Aranan: {clean_tag})</div>"}
-        
-        # ... geri kalanı aynı
-        
-        # Başarılı veri çekimi
-        name = data.get("name", "Bilinmiyor")
-        trophies = data.get("trophies", 0)
-        club = data.get("club", {}).get("name", "Yok") if data.get("club") else "Kulübü Yok"
-        
-        return {"html": f"""
-        <div class="space-y-2 p-4 bg-gray-800 rounded border-l-4 border-teal-500">
-            <p><b>👤 İsim:</b> {name}</p>
-            <p><b>🏆 Kupa:</b> {trophies}</p>
-            <p><b>🏠 Kulüp:</b> {club}</p>
-        </div>
-        """}
-    except Exception as e:
-        return {"html": f"<div class='p-3 bg-orange-900/30 border border-orange-500 rounded'>🚨 Sistem Hatası: {str(e)}</div>"}
+    for url in endpoints:
+        try:
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                name = data.get("name", "Bilinmiyor")
+                trophies = data.get("trophies", 0)
+                club = data.get("club", {}).get("name", "Kulüp Yok")
+                return {"html": f"<div class='bg-green-900/20 p-4 rounded border border-green-500'>👤 <b>{name}</b><br>🏆 Kupa: {trophies}<br>🏠 Kulüp: {club}</div>"}
+        except:
+            continue
+            
+    return {"html": "<div class='bg-red-900/20 p-4 rounded border border-red-500'>❌ Oyuncu verisine ulaşılamadı. Etiketi kontrol edin.</div>"}
