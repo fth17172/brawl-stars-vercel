@@ -5,7 +5,6 @@ import requests
 app = FastAPI()
 
 BS_KEYS = ["BS-FTH-17", "BS-XM4-99", "BS-W7R-12", "BS-K9A-34"]
-API_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6IjI4YTMxOGY3LTAwMDAtYTFlYi03ZmExLTJjNzQzM2M2Y2NhNSJ9.eyJpc3MiOiJzdXBlcmNlbGwiLCJhdWQiOiJzdXBlcmNlbGw6Z2FtZWFwaSIsImp0aSI6ImE1YjE3ZTViLWIyZDktNGFjZC05NDQwLTViNDIzZjI2ZjgzOCIsImlhdCI6MTg4MTcxODQzMywic3ViIjoiZGV2ZWxvcGVyLzA3NTEwNTI2LWUyM2MtNDJiMy1mODNjLWQyZWRjYWM0ODBlNiIsInNjb3BlcyI6WyJicmF3bHN0YXJzIl0sImxpbWl0cyI6W3sidGllciI6ImRldmVsb3Blci9zaWx2ZXIiLCJ0eXBlIjoidGhyb3R0bGluZyJ9LHsiY2lkcnMiOlsiNDYuMTk2LjIwNC4wIl0sInR5cGUiOiJjbGllbnQifV19.WOJTwjFlELPBjD6JlyKOV7gLoEtmeYI3CI_s48lPurB2_OWShHf1wU4UWTwzqomi8G1usR5WNNAa4GmcXXxJqw"
 
 @app.get("/", response_class=HTMLResponse)
 def read_root():
@@ -35,7 +34,7 @@ def read_root():
             <div id="main-content" class="space-y-4 hidden">
                 <div class="flex flex-col space-y-2">
                     <label class="text-sm text-gray-400">Brawl Stars Oyuncu Etiketi</label>
-                    <input type="text" id="player-tag" placeholder="Örn: #9UUUYQY8R" class="w-full p-3 bg-[#13131a] border border-[#3e3e52] rounded-xl text-white focus:outline-none focus:border-[#00ffcc]">
+                    <input type="text" id="player-tag" placeholder="Örn: 9UUUYQY8R" class="w-full p-3 bg-[#13131a] border border-[#3e3e52] rounded-xl text-white focus:outline-none focus:border-[#00ffcc]">
                 </div>
                 <button onclick="fetchStats()" class="w-full p-3 bg-[#00ffcc] text-black font-bold rounded-xl hover:bg-[#00e6b8] transition">Sorgula</button>
                 <div id="stats-output" class="mt-4"></div>
@@ -91,22 +90,25 @@ def get_stats(tag: str, key: str):
     if key not in BS_KEYS:
         raise HTTPException(status_code=401, detail="Yetkisiz Erişim!")
     
-    clean_tag = tag.upper().replace("#", "%23")
-    if not clean_tag.startswith("%23"):
-        clean_tag = "%23" + clean_tag
+    # Etiketteki # işaretini temizle, bu API saf etiket ister
+    clean_tag = tag.upper().replace("#", "")
 
-    url = f"https://api.brawlstars.com/v1/players/{clean_tag}"
-    headers = {"Authorization": f"Bearer {API_TOKEN}"}
+    # IP engeline takılmayan herkese açık proxy API mimarisi
+    url = f"https://api.brawlapi.com/v1/player?tag={clean_tag}"
     
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, timeout=10)
         if response.status_code == 200:
             data = response.json()
+            
             name = data.get("name", "Bilinmeyen Oyuncu")
             trophies = data.get("trophies", 0)
             highest_trophies = data.get("highestTrophies", 0)
             exp_level = data.get("expLevel", 0)
-            club_name = data.get("club", {}).get("name", "Kulübü Yok")
+            
+            # Kulüp bilgisi kontrolü
+            club = data.get("club", {})
+            club_name = club.get("name", "Kulübü Yok") if club else "Kulübü Yok"
             
             html_box = f'''
             <div style="background-color: #13131a; padding: 15px; border-radius: 12px; border-left: 5px solid #ffcc00;">
@@ -119,6 +121,7 @@ def get_stats(tag: str, key: str):
             </div>
             '''
             return {"html": html_box}
-        return {"html": f"<p class='text-yellow-500 text-sm'>⚠️ Oyuncu bulunamadı (API Kod: {response.status_code})</p>"}
+        
+        return {"html": f"<p class='text-yellow-500 text-sm'>⚠️ Oyuncu bulunamadı. Etiketi doğru girdiğinizden emin olun.</p>"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
